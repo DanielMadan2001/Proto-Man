@@ -1,0 +1,36 @@
+.top{
+	font-family: 'Courier New', monospace;
+	background-color:#000000;
+	text-align: center;
+	color: #eeeeee;
+	font-size: 50px;
+    margin-bottom: 0%;
+}
+
+.subline{
+	font-family: 'Courier New', monospace;
+	background-color:#000000;
+	text-align: center;
+	color: #eeeeee;
+	font-size: 20px;
+    margin-top: 0%;
+}
+
+.tableofcontents_th{
+	width: 180px;
+	height: 40px;
+	border: 3px solid #000000;
+    border-collapse: collapse;
+    text-align: center;
+    font-family: 'Courier New', monospace;
+}
+
+.tableofcontents{
+    margin-top: 0%;
+    margin: auto;
+    align-self: center;
+}
+
+h1, h2, h4, p, ul{
+    font-family: 'Courier New', monospace;
+}

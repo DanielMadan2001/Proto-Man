@@ -1,0 +1,38 @@
+table, th{
+    border-collapse: collapse;
+}
+
+.weaponicon{
+	float: left;
+	width: 24px;
+	padding-right: 5px;
+}
+
+.weaponname{
+    width: 250px;
+}
+
+.weaponpicturebox{
+    width: 10%;
+    vertical-align: top;
+}
+.weaponpicture{
+	float: left;
+	width: 200px;
+    padding-top: 10px;
+}
+
+.weaponnotes{
+    width: 60%;
+    vertical-align: text-top;
+}
+
+.weapondemo{
+    padding-left: 10px;
+}
+
+li{
+    vertical-align: text-top;
+    text-align: left;
+    font-weight:normal
+}

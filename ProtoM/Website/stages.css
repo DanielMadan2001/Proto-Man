@@ -1,0 +1,13 @@
+li{
+    font-size: 18;
+}
+
+.pictable{
+    font-family: 'Courier New', monospace;
+    width: 20px;
+}
+
+.pictableth{
+    vertical-align: top;
+    text-align: left;
+}

@@ -1,0 +1,353 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class PlayerScriptBig : MonoBehaviour
+{
+
+    public int playerHealth = 28;
+    public currentWeapon currentWeapon;
+
+    Animator _animator;
+    Rigidbody2D _rigidbody;
+    Transform _transform;
+
+    public LayerMask groundLayer;
+
+    // player script
+    public int direction = 1;
+    public float moveSpeed;
+    public int jumpHeight;
+    public float slideTime;
+    public float shootTime;
+
+    // horizontal movement
+    public Transform groundCheck;
+    public Transform groundCheck2;
+    private float moveTime = 0;
+
+    // player slide
+    bool cantStopSliding;
+    public Transform slideCheck;
+    public Transform slideCheck2;
+    private float slideTimeLeft;
+    private float slideSpeed;
+
+    // player shoot
+    public Lemon lemonScript;
+    public Lemon lemonScript2;
+    public Lemon lemonScript3;
+    public GameObject lemon;
+    public GameObject lemon2;
+    public GameObject lemon3;
+    private float shootTimeLeft;
+    private float shootButtonHeldDown;
+    public float lvl2HoldDownTime;
+    public float lvl3HoldDownTime;
+    int bulletLevel = 1;
+
+    public bool canMove;
+    public bool isGrounded;
+    public bool isMoving;
+    public bool isRunning;
+    public bool isSliding;
+    public bool isIdleShooting;
+    public bool isShooting;
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    void Start()
+    {
+        _animator = GetComponent<Animator>();
+        _rigidbody = GetComponent<Rigidbody2D>();
+        _transform = GetComponent<Transform>();
+
+        canMove = true;
+
+        // player slide
+        slideTimeLeft = slideTime;
+        slideSpeed = moveSpeed * 2;
+
+        // player shoot
+        shootTimeLeft = shootTime;
+    }
+
+    void Update()
+    {
+        // horizontal movement and player jump
+        GroundCheck();
+        if (canMove && !isIdleShooting)
+        {
+            DirectionCheck();
+            Moving();
+            Jump();
+        }
+
+        // player slide
+        PressSlideButton();
+        SlideCheck();
+        ContinuousSlide();
+
+        // player shoot
+        ShootCheck();
+        Shooting();
+        ChargeShot();
+
+        Debug.Log(shootButtonHeldDown);
+        //Debug.Log();
+    }
+
+    //////////////////////////////////////////////////////////////////////////////// horizontal movement
+    void GroundCheck()
+    {
+        bool check1 = Physics2D.Linecast(_transform.position, groundCheck.position, groundLayer);
+        bool check2 = Physics2D.Linecast(_transform.position, groundCheck2.position, groundLayer);
+
+        isGrounded = check1;
+
+        _animator.SetBool("isGrounded", isGrounded);
+    }
+
+    void DirectionCheck()
+    {
+        Vector3 localScale = _transform.localScale;
+        if ((Input.GetAxisRaw("Horizontal") == 1 && direction == -1) || (Input.GetAxisRaw("Horizontal") == -1 && direction == 1))
+        {
+            direction *= -1;
+        }
+        localScale.x = direction;
+        _transform.localScale = localScale;
+    }
+
+    void Moving()
+    {
+        MoveCheck();
+        RunCheck();
+        Running();
+    }
+
+    void MoveCheck()
+    {
+        if (Input.GetAxisRaw("Horizontal") != 0)
+        {
+            isMoving = true;
+            moveTime += Time.deltaTime;
+        }
+        else
+        {
+            isMoving = false;
+            moveTime = 0;
+        }
+
+        _animator.SetBool("isMoving", isMoving);
+    }
+
+    void RunCheck()
+    {
+        if (moveTime > 0.085f)
+        {
+            isRunning = true;
+        }
+        else
+        {
+            isRunning = false;
+        }
+
+        _animator.SetBool("isRunning", isRunning);
+    }
+
+    void Running()
+    {
+        if (!isSliding)
+        {
+            if (isRunning || !isGrounded)
+            {
+                _rigidbody.velocity = new Vector2(Input.GetAxisRaw("Horizontal") * moveSpeed, _rigidbody.velocity.y);
+            }
+            else
+            {
+                _rigidbody.velocity = new Vector2(Input.GetAxisRaw("Horizontal") * (moveSpeed * 0.2f), _rigidbody.velocity.y);
+            }
+        }
+    }
+
+    //////////////////////////////////////////////////////////////////////////////// jump
+    void Jump()
+    {
+        float vy = _rigidbody.velocity.y;
+        if (Input.GetButtonDown("Jump") && isGrounded && Input.GetAxisRaw("Vertical") > -1 && !isSliding)
+        {
+            vy = 0f;
+            _rigidbody.AddForce(new Vector2(0, jumpHeight));
+        }
+
+        if (Input.GetButtonUp("Jump") && vy > 0)
+        {
+            _rigidbody.velocity = new Vector2(Input.GetAxisRaw("Horizontal") * moveSpeed, -1f);
+        }
+    }
+
+    //////////////////////////////////////////////////////////////////////////////// slide
+    void PressSlideButton()
+    {
+        if (Input.GetButtonDown("Jump") && isGrounded && Input.GetAxisRaw("Vertical") == -1)
+        {
+            isSliding = true;
+        }
+        _animator.SetBool("isSliding", isSliding);
+    }
+
+    void SlideCheck()
+    {
+        if (Physics2D.Linecast(_transform.position, slideCheck.position, groundLayer) || Physics2D.Linecast(_transform.position, slideCheck2.position, groundLayer))
+        {
+            cantStopSliding = true;
+        }
+        else
+        {
+            cantStopSliding = false;
+        }
+    }
+
+    void ContinuousSlide()
+    {
+        if (isSliding && slideTimeLeft > 0 || cantStopSliding)
+        {
+            _rigidbody.velocity = new Vector2(direction * slideSpeed, _rigidbody.velocity.y);
+            slideTimeLeft -= Time.deltaTime;
+        }
+        else if ((isSliding && slideTimeLeft < 0 && !cantStopSliding) || !isGrounded)
+        {
+            isSliding = false;
+            slideTimeLeft = slideTime;
+        }
+    }
+
+    //////////////////////////////////////////////////////////////////////////////// shoot
+    void ShootCheck()
+    {
+        if (Input.GetButtonDown("Fire1") && GameObject.FindGameObjectsWithTag("Bullet").Length < 2)
+        {
+            shootTimeLeft = shootTime;
+            isShooting = true;
+            Bullet();
+        }
+        else if (Input.GetButtonDown("Fire1") && GameObject.FindGameObjectsWithTag("Bullet").Length < 3)
+        {
+            isShooting = true;
+            Bullet();
+        }
+        else if (Input.GetButton("Fire2") && GameObject.FindGameObjectsWithTag("Bullet").Length < 3)
+        {
+            isShooting = true;
+            Bullet();
+        }
+
+        lemonScript.Flip(direction);
+        lemonScript2.Flip(direction);
+        lemonScript3.Flip(direction);
+
+        if ((direction < 0 && lemon3.transform.localScale.x > 0) || (direction > 0 && lemon3.transform.localScale.x < 0))
+        {
+            Vector2 theScale = new Vector2();
+            theScale = lemon3.transform.localScale;
+            theScale.x *= -1;
+            lemon.transform.localScale = theScale;
+            lemon2.transform.localScale = theScale;
+            lemon3.transform.localScale = theScale;
+        }
+
+        _animator.SetBool("isShooting", isShooting);
+    }
+
+    void Bullet()
+    {
+        float bx = _transform.position.x + 1.5f;
+        float by = _transform.position.y - 0.3f;
+
+        if (isSliding)
+        {
+            bx += (1f * direction);
+            by += 0.3f;
+        }
+
+        if (direction < 0)
+        {
+            bx -= 3f;
+        }
+
+        if (bulletLevel == 1)
+        {
+            GameObject b = Instantiate(lemon, new Vector3(bx, by, -1), Quaternion.identity) as GameObject;
+        }
+        else if (bulletLevel == 2)
+        {
+            GameObject b = Instantiate(lemon2, new Vector3(bx, by, -1), Quaternion.identity) as GameObject;
+        }
+        else
+        {
+            GameObject b = Instantiate(lemon3, new Vector3(bx, by, -1), Quaternion.identity) as GameObject;
+        }
+
+
+    }
+
+    void Shooting()
+    {
+        if (isShooting && isGrounded && shootTimeLeft <= shootTime && Input.GetAxisRaw("Horizontal") == 0 && !isSliding && shootTimeLeft > 0)
+        {
+            isIdleShooting = true;
+            shootTimeLeft -= Time.deltaTime;
+
+            if (isShooting && isGrounded && Input.GetAxisRaw("Horizontal") == 0 && shootTimeLeft < 0)
+            {
+                isShooting = false;
+                isIdleShooting = false;
+                shootTimeLeft = shootTime;
+            }
+        }
+        else if (isShooting && shootTimeLeft <= shootTime && shootTimeLeft > 0)
+        {
+            shootTimeLeft -= Time.deltaTime;
+
+            if (isShooting && shootTimeLeft < 0)
+            {
+                isShooting = false;
+                isIdleShooting = false;
+                shootTimeLeft = shootTime;
+            }
+        }
+    }
+
+    void ChargeShot()
+    {
+        if (Input.GetButton("Fire1"))
+        {
+            shootButtonHeldDown += Time.deltaTime;
+        }
+        else if (Input.GetButtonUp("Fire1") && shootButtonHeldDown > lvl2HoldDownTime)
+        {
+            Bullet();
+            isShooting = true;
+        }
+        else
+        {
+            shootButtonHeldDown = 0f;
+        }
+
+        if (shootButtonHeldDown > lvl2HoldDownTime && shootButtonHeldDown < lvl3HoldDownTime)
+        {
+            bulletLevel = 2;
+        }
+        else if (shootButtonHeldDown > lvl3HoldDownTime)
+        {
+            bulletLevel = 3;
+        }
+        else
+        {
+            bulletLevel = 1;
+        }
+    }
+}
